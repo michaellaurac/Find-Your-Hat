@@ -33,12 +33,6 @@ class Field {
   }
   
   // Constant definition
-  static get startPosition() {
-    return {
-      x: 0,
-      y: 0
-    }
-  }
 
   static get hatCharacter() {
     return '^'.yellow;
@@ -145,8 +139,9 @@ class Field {
     let occupiedCells = [];
 
     // Blue * character on the start position
-    this.writeCharacterInArrayOn(field, Field.startPosition, Field.currentPathCharacter);
-    occupiedCells.push(Field.startPosition);
+    let newRandomStartPosition = this.findUnoccupiedRandomPosition(occupiedCells);
+    this.writeCharacterInArrayOn(field, newRandomStartPosition, Field.currentPathCharacter);
+    occupiedCells.push(newRandomStartPosition);
   
     // Red O characters on a number of unoccupied random position
     for (let i = 0; i < this.numberHoles; i++) {
