@@ -15,9 +15,11 @@ class Field {
     this._dimensionY = dimensionY;
     this._numberHoles = Math.floor ( dimensionX * dimensionY * percentageHoles / 100 );
 
+    this._occupiedCells = [];
+
     this._array = this.generateField();
 
-    this._position = Field.startPosition;
+    this._position = this._occupiedCells[0];
 
     this._nextPosition = {};
 
@@ -47,7 +49,7 @@ class Field {
   }
 
   static get pathCharacter() {
-    return '*'.white;
+    return '.';
   }
 
   static get currentPathCharacter() {
@@ -83,6 +85,10 @@ class Field {
     return this._direction;
   }
 
+  get occupiedCells() {
+    return this._occupiedCells;
+  }
+
   get situations() {
     return this._situations;
   }
@@ -103,13 +109,17 @@ class Field {
     this._direction = newDirection;
   }
 
+  set occupiedCells(newOccupiedCells) {
+    this.occupiedCells = newOccupiedCells;
+  }
+
   set gameOver(hasHappened) {
     this._gameOver = hasHappened;
   }
 
   // Helper functions
 
-  findUnoccupiedRandomPosition(occupiedCells) {
+  findUnoccupiedRandomPosition() {
     let randomPosition;
 
     do {
@@ -117,7 +127,7 @@ class Field {
         x: Math.floor(Math.random() * this.dimensionX),
         y: Math.floor(Math.random() * this.dimensionY)
       }
-    } while (occupiedCells.some(occupiedCell => occupiedCell.x === randomPosition.x && occupiedCell.y === randomPosition.y));
+    } while (this.occupiedCells.some(occupiedCell => occupiedCell.x === randomPosition.x && occupiedCell.y === randomPosition.y));
 
     return randomPosition;
   }
@@ -134,25 +144,26 @@ class Field {
     array[position.x][position.y] = character;
   }
 
+  addCells(array, number, character) {
+    
+    for (let i = 0; i < number; i++) {
+      let newRandomCellPosition = this.findUnoccupiedRandomPosition();
+      this.writeCharacterInArrayOn(array, newRandomCellPosition, character);
+      this.occupiedCells.push(newRandomCellPosition);
+    }
+  }
+
   generateField() {
     let field = Array.from({ length: this.dimensionX }, x => Array.from({ length: this.dimensionY }, y => Field.fieldCharacter));
-    let occupiedCells = [];
 
     // Blue * character on the start position
-    let newRandomStartPosition = this.findUnoccupiedRandomPosition(occupiedCells);
-    this.writeCharacterInArrayOn(field, newRandomStartPosition, Field.currentPathCharacter);
-    occupiedCells.push(newRandomStartPosition);
+    this.addCells(field, 1, Field.currentPathCharacter);
   
     // Red O characters on a number of unoccupied random position
-    for (let i = 0; i < this.numberHoles; i++) {
-      let newRandomHolePosition = this.findUnoccupiedRandomPosition(occupiedCells);
-      this.writeCharacterInArrayOn(field, newRandomHolePosition, Field.holeCharacter);
-      occupiedCells.push(newRandomHolePosition);
-    }
+    this.addCells(field, this.numberHoles, Field.holeCharacter);
   
     // Yellow ^ character in an unoccupied random position
-    let newRandomHatPosition = this.findUnoccupiedRandomPosition(occupiedCells);
-    this.writeCharacterInArrayOn(field, newRandomHatPosition, Field.hatCharacter);
+    this.addCells(field, 1, Field.hatCharacter);
     
     return field;
   } 
@@ -169,7 +180,7 @@ class Field {
     })
   }
 
-  reauestDirection() {
+  requestDirection() {
     this.direction = null;
     while (this.direction === null) {
       const direction = prompt("Which way would you like to go?");
@@ -202,7 +213,7 @@ class Field {
       situation = this._situations.playerOutOfField;
       this.gameOver = true;
       throw situation;
-    } 
+    }
     if (this.playerFallenInHole()) {
       situation = this._situations.playerFallenInHole;
       this.gameOver = true;
@@ -231,7 +242,7 @@ class Field {
   }
 
   moveToNewPosition() {
-    this.writeCharacterInArrayOn(this.array, this.position, Field.pathCharacter);
+    this.writeCharacterInArrayOn(this.array, this.position, '.');
     this.position = this.nextPosition;
     this.writeCharacterInArrayOn(this.array, this.position, Field.currentPathCharacter);
     this.nextPosition = {};
@@ -242,7 +253,7 @@ class Field {
   startGame() {
     this.print();
     while (!this.gameOver) {
-      this.reauestDirection();
+      this.requestDirection();
       this.calculateNextPosition();
       try {
         this.checkSituation();
