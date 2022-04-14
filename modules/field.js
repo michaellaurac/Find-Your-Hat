@@ -1,4 +1,4 @@
-const { GrassCell, HatCell, HoleCell, PlayerCell } = require('./cell.js');
+const { Position, GrassCell, HatCell, HoleCell, PlayerCell } = require('./cell.js');
 const { randomInteger, numberFromPercentage } = require('./math-functions');
 const { indexToPosition, isLastIndexOfDimensionX } = require('./array-functions');
 
@@ -10,6 +10,8 @@ class Field {
     this._dimensionY = dimensionY;
 
     this._array = Field.generateField(dimensionX, dimensionY, percentageHoles);
+
+    this._distanceFromPlayerToHat = Field.distanceFromPlayerToHat(this.array);
   }
   
   // Getter and setter functions
@@ -26,8 +28,8 @@ class Field {
     return this._dimensionY;
   }
 
-  get numberHoles() {
-    return this._numberHoles;
+  get distanceFromPlayerToHat() {
+    return this._distanceFromPlayerToHat;
   }
 
   // Helper functions
@@ -73,6 +75,17 @@ class Field {
 
   static getPlayerCell(array) {
     return array.find(cell => cell.isPlayer());
+  }
+
+  static getHatCell(array) {
+    return array.find(cell => cell.isHat());
+  }
+
+  static distanceFromPlayerToHat(array) {
+    const hatCell = Field.getHatCell(array);
+    const playerCell = Field.getPlayerCell(array);
+
+    return playerCell.position.distanceToPosition(hatCell.position);
   }
 
   static getCellInPosition(array, position) {

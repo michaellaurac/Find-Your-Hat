@@ -1,4 +1,4 @@
-const { PathCell, PlayerCell } = require('./cell');
+const { PathCell, PlayerCell, Position } = require('./cell');
 const Field = require('./field');
 const Situation = require('./situation');
 
@@ -6,13 +6,15 @@ const prompt = require('prompt-sync')({sigint: true});
 
 class Game {
   constructor(dimensionX, dimensionY, percentageHoles) {
-    this._gameOver = false;
-
     this._field = new Field(dimensionX, dimensionY, percentageHoles);
 
-    this._player = Game.getPlayer(this._field);
-
     this._playerDirection = null;
+
+    this._gameOver = false;
+
+    this._minimumMoves = Game.distanceFromPlayerToHat(this.field);
+
+    this._countMoves = 0;
   }
   
   static get situations() {
@@ -25,10 +27,6 @@ class Game {
 
   // Getter and setter functions
 
-  get gameOver() {
-    return this._gameOver;
-  }
-
   get field() {
     return this._field;
   }
@@ -37,18 +35,38 @@ class Game {
     return this._playerDirection;
   }
 
-  set gameOver(happened) {
-    this._gameOver = happened;
+  get gameOver() {
+    return this._gameOver;
+  }
+
+  get countMoves() {
+    return this._countMoves;
+  }
+
+  get minimumMoves() {
+    return this._minimumMoves;
   }
 
   set playerDirection(direction) {
     this._playerDirection = direction;
   }
 
+  set gameOver(happened) {
+    this._gameOver = happened;
+  }
+
+  set countMoves(count) {
+    this._countMoves = count;
+  }
+
   // Helper functions
 
   static getPlayer(field) {
     return Field.getPlayerCell(field.array);
+  }
+
+  static distanceFromPlayerToHat(field) {
+    return field.distanceFromPlayerToHat;
   }
 
   static getCell(field, position) {
@@ -132,10 +150,7 @@ class Game {
 
   static movePlayerToNextPosition(field, nextPosition) {
     const player = Game.getPlayer(field);
-    const currentPosition = {
-      x: player.position.x,
-      y: player.position.y
-    };
+    const currentPosition = new Position(player.position);
 
     const newPath = new PathCell(currentPosition);
     Game.replaceCell(field, player, newPath);
@@ -148,10 +163,7 @@ class Game {
 
   static movePlayer(field, direction) {
     const player = Game.getPlayer(field);
-    const currentPosition = {
-      x: player.position.x,
-      y: player.position.y
-    };
+    const currentPosition =  new Position(player.position);
 
     const nextPosition = Game.calculateNextPosition(currentPosition, direction);
 
@@ -178,10 +190,12 @@ class Game {
           process.stdout.write("---GAME OVER---");
         }
         if (!this.gameOver && situation.message === Game.situations.playerFoundHat.message) {
-          process.stdout.write("---GAME WON---");
+          this.countMoves++;
+          process.stdout.write(`---GAME WON IN ${this.countMoves} MOVES AGAINST A MINIMUM OF ${this.minimumMoves} MOVES---`);
         }
         process.exit();
       }
+      this.countMoves++;
       this._playerDirection = null;
       Game.print(this.field);
       process.stdout.write("You are safely moving along your path...\n");

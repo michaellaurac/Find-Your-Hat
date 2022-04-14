@@ -1,13 +1,34 @@
 const colors = require('colors');
+const { distanceFromMToN } = require('./math-functions')
+
+class Position {
+  constructor(position) {
+    this._x = position.x
+    this._y = position.y
+  }
+
+  get x() {
+    return this._x;
+  }
+
+  get y() {
+    return this._y;
+  }
+
+  isEqualTo(position) {
+    return (this.x === position.x) && (this.y === position.y);
+  }
+
+  distanceToPosition(position) {
+    return distanceFromMToN(this.x, position.x) + distanceFromMToN(this.y, position.y);
+  }
+}
 
 class Cell {
   
   constructor(position, character) {
 
-    this._position = {
-      x: position.x,
-      y: position.y
-    }
+    this._position = new Position(position)
 
     this._character = character
   }
@@ -106,4 +127,4 @@ class PlayerCell extends Cell {
   }
 }
 
-module.exports = { Cell, GrassCell, HatCell, HoleCell, PathCell, PlayerCell };
+module.exports = { Position, Cell, GrassCell, HatCell, HoleCell, PathCell, PlayerCell };
