@@ -2,7 +2,8 @@ const { PathCell, PlayerCell, Position } = require('./cell');
 const Field = require('./field');
 const Situation = require('./situation');
 
-const prompt = require('prompt-sync')({sigint: true});
+//const prompt = require('prompt-sync')({sigint: true});
+const readline = require('readline');
 
 class Game {
   constructor(dimensionX, dimensionY, percentageHoles) {
@@ -77,19 +78,55 @@ class Game {
     Field.print(field.array, field.dimensionX);
   }
 
-  static requestDirection() {
-    let direction = null;
-    while (direction === null) {
-      const newDirection = prompt("Which way would you like to go?");
-      if (Game.isValid(newDirection)) {
-        direction = newDirection;
-      }
-    }
-    return direction;
+  static initializeInterface() {
+    readline.emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
   }
 
-  static isValid(direction) {
-    return direction.match(/^(r|l|d|u){1}$/i);
+  getKey() {
+    process.stdin.on('keypress', (str, key) => {
+      if (key.ctrl && key.name === 'c') {
+        process.exit();
+      } else {
+        if (Game.isValid(key)) {
+          this.playerDirection = key.name;
+          this.tryMovingPlayerInDirection();
+        }
+      }
+    });
+  }
+
+  static requestDirection(game) {
+    process.stdout.write("Which direction woud like to follow?\n");
+    game.getKey();
+  }
+
+  static isValid(key/*direction*/) {
+    //return direction.match(/^(r|l|d|u){1}$/i);
+    return key.name === 'up' || key.name === 'down' || key.name === 'right' || key.name === 'left';
+  }
+
+  tryMovingPlayerInDirection() {
+    try {
+      Game.movePlayer(this.field, this.playerDirection);
+    }
+    catch(situation) {
+      process.stdout.write(situation.message);
+      Game.print(this.field);
+      process.stdout.write(situation.message);
+      this.gameOver = situation.message === Game.situations.playerFallenInHole.message || situation.message === Game.situations.playerOutOfField.message;
+      if (this.gameOver) {
+        process.stdout.write("---GAME OVER---");
+      }
+      if (!this.gameOver && situation.message === Game.situations.playerFoundHat.message) {
+        this.countMoves++;
+        process.stdout.write(`---GAME WON IN ${this.countMoves} MOVES AGAINST A MINIMUM OF ${this.minimumMoves} MOVES---`);
+      }
+      process.exit();
+    }
+    this.countMoves++;
+    Game.print(this.field);
+    process.stdout.write("You are safely moving along your path...\n");
   }
 
   static calculateNextPosition(currentPosition, direction) {
@@ -97,16 +134,16 @@ class Game {
       x: currentPosition.x,
       y: currentPosition.y
     };
-    if (direction === "l") {
+    if (direction === "left") {
       nextPosition.x -= 1;
     }
-    if (direction === "r") {
+    if (direction === "right") {
       nextPosition.x += 1;
     }
-    if (direction === "u") {
+    if (direction === "up") {
       nextPosition.y -= 1;
     }
-    if (direction === "d") {
+    if (direction === "down") {
       nextPosition.y += 1;
     }
     return nextPosition;
@@ -162,8 +199,11 @@ class Game {
   }
 
   static movePlayer(field, direction) {
+    console.log(direction);
     const player = Game.getPlayer(field);
+    
     const currentPosition =  new Position(player.position);
+    
 
     const nextPosition = Game.calculateNextPosition(currentPosition, direction);
 
@@ -175,31 +215,9 @@ class Game {
   }
 
   startGame() {
+    Game.initializeInterface();
     Game.print(this.field);
-
-    while (!this.gameOver) {
-      this.playerDirection = Game.requestDirection();
-      try {
-        Game.movePlayer(this.field, this.playerDirection);
-      }
-      catch(situation) {
-        Game.print(this.field);
-        process.stdout.write(situation.message);
-        this.gameOver = situation.message === Game.situations.playerFallenInHole.message || situation.message === Game.situations.playerOutOfField.message;
-        if (this.gameOver) {
-          process.stdout.write("---GAME OVER---");
-        }
-        if (!this.gameOver && situation.message === Game.situations.playerFoundHat.message) {
-          this.countMoves++;
-          process.stdout.write(`---GAME WON IN ${this.countMoves} MOVES AGAINST A MINIMUM OF ${this.minimumMoves} MOVES---`);
-        }
-        process.exit();
-      }
-      this.countMoves++;
-      this._playerDirection = null;
-      Game.print(this.field);
-      process.stdout.write("You are safely moving along your path...\n");
-    }
+    Game.requestDirection(this);
   }
 }
 
