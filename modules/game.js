@@ -13,7 +13,7 @@ class Game {
 
     this._gameOver = false;
 
-    this._minimumMoves = Game.distanceFromPlayerToHat(this.field);
+    this._minimumMoves = this.distanceFromPlayerToHat();
 
     this._countMoves = 0;
   }
@@ -62,25 +62,29 @@ class Game {
 
   // Helper functions
 
-  static getPlayer(field) {
-    return Field.getPlayerCell(field.array);
+  getPlayer() {
+    return this.field.getPlayerCell();
   }
 
-  static distanceFromPlayerToHat(field) {
-    return field.distanceFromPlayerToHat;
+  distanceFromPlayerToHat() {
+    return this.field.distanceFromPlayerToHat();
   }
 
-  static getCell(field, position) {
-    return Field.getCellInPosition(field.array, position);
+  getCell(position) {
+    return this.field.getCellInPosition(position);
   }
 
-  static print(field) {
-    Field.print(field.array, field.dimensionX);
+  print() {
+    this.field.print();
   }
 
-  static initializeInterface() {
+  initializeInterface() {
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
+  }
+
+  isValid(key) {
+    return key.name === 'up' || key.name === 'down' || key.name === 'right' || key.name === 'left';
   }
 
   getKey() {
@@ -88,31 +92,29 @@ class Game {
       if (key.ctrl && key.name === 'c') {
         process.exit();
       } else {
-        if (Game.isValid(key)) {
-          this.playerDirection = key.name;
-          this.tryMovingPlayerInDirection();
+        if (this.isValid(key)) {
+          this.updatePlayerDirection(key.name);
         }
       }
     });
   }
 
-  static requestDirection(game) {
+  requestDirection() {
     process.stdout.write("Which direction woud like to follow?\n");
-    game.getKey();
+    this.getKey();
   }
 
-  static isValid(key/*direction*/) {
-    //return direction.match(/^(r|l|d|u){1}$/i);
-    return key.name === 'up' || key.name === 'down' || key.name === 'right' || key.name === 'left';
+  updatePlayerDirection(direction) {
+    this.playerDirection = direction;
+    this.tryMovingPlayerInDirection();
   }
 
   tryMovingPlayerInDirection() {
     try {
-      Game.movePlayer(this.field, this.playerDirection);
+      this.movePlayer(this.playerDirection);
     }
     catch(situation) {
-      process.stdout.write(situation.message);
-      Game.print(this.field);
+      //this.print();
       process.stdout.write(situation.message);
       this.gameOver = situation.message === Game.situations.playerFallenInHole.message || situation.message === Game.situations.playerOutOfField.message;
       if (this.gameOver) {
@@ -125,11 +127,12 @@ class Game {
       process.exit();
     }
     this.countMoves++;
-    Game.print(this.field);
+    this.print();
     process.stdout.write("You are safely moving along your path...\n");
   }
 
   static calculateNextPosition(currentPosition, direction) {
+
     const nextPosition = {
       x: currentPosition.x,
       y: currentPosition.y
@@ -146,38 +149,38 @@ class Game {
     if (direction === "down") {
       nextPosition.y += 1;
     }
-    return nextPosition;
+    return new Position(nextPosition);
   }
 
-  static replaceCell(field, oldCell, newCell) {
-    Field.replaceCell(field.array, oldCell, newCell);
+  replaceCell(oldCell, newCell) {
+    Field.replaceCell(this.field.array, oldCell, newCell);
   }
 
-  static playerOutOfField(field, position) {
-    return Field.isPositionOutOfField(field.dimensionX, field.dimensionY, position);
+  playerOutOfField(position) {
+    return this.field.isPositionOutOfField(this.field.dimensionX, this.field.dimensionY, position);
   }
 
-  static playerFallenInHole(field, position) {
-    return Game.getCell(field, position).isHole();
+  playerFallenInHole(position) {
+    return this.getCell(position).isHole();
   }
 
-  static playerFoundHat(field, position) {
-    return Game.getCell(field, position).isHat();
+  playerFoundHat(position) {
+    return this.getCell(position).isHat();
   }
 
-  static evaluateNextPosition(field, position) {
+  evaluateNextPosition(position) {
     let checkOk = false;
     let situation = null;
     
-    if (Game.playerOutOfField(field, position)) {
+    if (this.playerOutOfField(position)) {
       situation = Game.situations.playerOutOfField;
       throw situation;
     }
-    if (Game.playerFallenInHole(field, position)) {
+    if (this.playerFallenInHole(position)) {
       situation = Game.situations.playerFallenInHole;
       throw situation;
     }
-    if (Game.playerFoundHat(field, position)) {
+    if (this.playerFoundHat(position)) {
       situation = Game.situations.playerFoundHat;
       throw situation;
     }
@@ -185,39 +188,40 @@ class Game {
     return checkOk;
   }
 
-  static movePlayerToNextPosition(field, nextPosition) {
-    const player = Game.getPlayer(field);
+  movePlayerToNextPosition(nextPosition) {
+    
+    const player = this.getPlayer();
     const currentPosition = new Position(player.position);
 
     const newPath = new PathCell(currentPosition);
-    Game.replaceCell(field, player, newPath);
+    this.replaceCell(player, newPath);
 
-    const nextCell = Game.getCell(field, nextPosition);
+    const nextCell = this.getCell(nextPosition);
       
     const newPlayer = new PlayerCell(nextPosition);
-    Game.replaceCell(field, nextCell, newPlayer);
+    this.replaceCell(nextCell, newPlayer);
   }
 
-  static movePlayer(field, direction) {
-    console.log(direction);
-    const player = Game.getPlayer(field);
+  movePlayer(direction) {
     
-    const currentPosition =  new Position(player.position);
+    const player = this.getPlayer();
     
-
+    const currentPosition = new Position(player.position);
+    
     const nextPosition = Game.calculateNextPosition(currentPosition, direction);
 
-    const checkOk = Game.evaluateNextPosition(field, nextPosition);
+    const checkOk = this.evaluateNextPosition(nextPosition);
     
     if (checkOk) {
-      Game.movePlayerToNextPosition(field, nextPosition);
+      
+      this.movePlayerToNextPosition(nextPosition);
     }
   }
 
   startGame() {
-    Game.initializeInterface();
-    Game.print(this.field);
-    Game.requestDirection(this);
+    this.initializeInterface();
+    this.print(this.field);
+    this.requestDirection(this);
   }
 }
 

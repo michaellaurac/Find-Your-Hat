@@ -11,7 +11,7 @@ class Field {
 
     this._array = Field.generateField(dimensionX, dimensionY, percentageHoles);
 
-    this._distanceFromPlayerToHat = Field.distanceFromPlayerToHat(this.array);
+    this._distanceFromPlayerToHat = this.distanceFromPlayerToHat();
   }
   
   // Getter and setter functions
@@ -28,7 +28,7 @@ class Field {
     return this._dimensionY;
   }
 
-  get distanceFromPlayerToHat() {
+  distanceFromPlayerToHat() {
     return this._distanceFromPlayerToHat;
   }
 
@@ -44,7 +44,7 @@ class Field {
     return Field.cellFromIndex(emptyCells, emptyIndex);
   }
 
-  static isPositionOutOfField(dimensionX, dimensionY, position) {
+  isPositionOutOfField(dimensionX, dimensionY, position) {
     return (
       (position.x < 0) || 
       (position.x >= dimensionX) ||
@@ -73,23 +73,23 @@ class Field {
     return array.filter(cell => cell.isEmpty());
   }
 
-  static getPlayerCell(array) {
-    return array.find(cell => cell.isPlayer());
+  getPlayerCell() {
+    return this.array.find(cell => cell.isPlayer());
   }
 
-  static getHatCell(array) {
-    return array.find(cell => cell.isHat());
+  getHatCell() {
+    return this.array.find(cell => cell.isHat());
   }
 
-  static distanceFromPlayerToHat(array) {
-    const hatCell = Field.getHatCell(array);
-    const playerCell = Field.getPlayerCell(array);
+  distanceFromPlayerToHat() {
+    const hatCell = this.getHatCell();
+    const playerCell = this.getPlayerCell();
 
     return playerCell.position.distanceToPosition(hatCell.position);
   }
 
-  static getCellInPosition(array, position) {
-    return array.find(cell => cell.position.x === position.x && cell.position.y === position.y);
+  getCellInPosition(position) {
+    return this.array.find(cell => cell.position.x === position.x && cell.position.y === position.y);
   }
 
   static generateEmptyArray(dimensionX, dimensionY) {
@@ -115,12 +115,12 @@ class Field {
     return newArray;
   }
 
-  static print(array, dimensionX) {
+  print() {
     console.clear();
 
-    array.forEach((cell, index) => {
+    this.array.forEach((cell, index) => {
       process.stdout.write(cell.character);
-      if (isLastIndexOfDimensionX(index, dimensionX)) {
+      if (isLastIndexOfDimensionX(index, this.dimensionX)) {
         process.stdout.write('\n');
       }
     });
