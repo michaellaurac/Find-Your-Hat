@@ -115,6 +115,21 @@ class Field {
     return newArray;
   }
 
+  addDifficulty(mode) {
+    const percentageAdditionalHoles = {
+      easy: 1.00,
+      medium: 2.00,
+      hard: 3.00
+    }[mode]
+    
+
+    const numberHoles = numberFromPercentage( this.dimensionX * this.dimensionY, percentageAdditionalHoles);
+    console.log(mode);
+    console.log(percentageAdditionalHoles);
+    console.log(numberHoles + " hole(s)");
+    Field.createCellsAnywhere(this.array, HoleCell, numberHoles);
+  }
+
   print() {
     console.clear();
 

@@ -6,7 +6,9 @@ const Situation = require('./situation');
 const readline = require('readline');
 
 class Game {
-  constructor(dimensionX, dimensionY, percentageHoles) {
+  constructor(dimensionX, dimensionY, percentageHoles, playingMode) {
+    this._playingMode = playingMode;
+
     this._field = new Field(dimensionX, dimensionY, percentageHoles);
 
     this._playerDirection = null;
@@ -27,6 +29,9 @@ class Game {
   }
 
   // Getter and setter functions
+  get playingMode() {
+    return this._playingMode;
+  }
 
   get field() {
     return this._field;
@@ -100,7 +105,7 @@ class Game {
   }
 
   requestDirection() {
-    process.stdout.write("Which direction woud like to follow?\n");
+    process.stdout.write("Use arrows on the keyboard to move your player (blue star) and find your hat (yellow caret) avoiding hole (red O) and falling outside the board.\n");
     this.getKey();
   }
 
@@ -114,7 +119,7 @@ class Game {
       this.movePlayer(this.playerDirection);
     }
     catch(situation) {
-      //this.print();
+      this.print();
       process.stdout.write(situation.message);
       this.gameOver = situation.message === Game.situations.playerFallenInHole.message || situation.message === Game.situations.playerOutOfField.message;
       if (this.gameOver) {
@@ -127,10 +132,11 @@ class Game {
       process.exit();
     }
     this.countMoves++;
+    this.addDifficulty(this.playingMode);
     this.print();
     process.stdout.write("You are safely moving along your path...\n");
   }
-
+  
   static calculateNextPosition(currentPosition, direction) {
 
     const nextPosition = {
@@ -216,6 +222,10 @@ class Game {
       
       this.movePlayerToNextPosition(nextPosition);
     }
+  }
+
+  addDifficulty() {
+    this.field.addDifficulty(this.playingMode);
   }
 
   startGame() {
